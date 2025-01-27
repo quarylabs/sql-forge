@@ -574,11 +574,7 @@ impl CTEBuilder {
         clone_map: &SegmentCloneMap,
     ) {
         for (idx, cte) in enumerate(&self.ctes) {
-            if cte
-                .recursive_crawl_all(false)
-                .into_iter()
-                .any(|seg| segment.is(&seg))
-            {
+            if cte.recursive_crawl_all(false).any(|seg| segment.is(&seg)) {
                 self.ctes[idx] = clone_map[&self.ctes[idx]].clone();
                 return;
             }
