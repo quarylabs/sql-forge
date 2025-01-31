@@ -12,7 +12,6 @@ DbtTemplater class and so are only imported when necessary.
 import logging
 import os
 import os.path
-import sys
 from collections import deque
 from contextlib import contextmanager
 from dataclasses import dataclass
@@ -266,13 +265,10 @@ class DbtTemplater(JinjaTemplater):
 
         # Attempt to silence internal logging at this point.
         # https://github.com/sqlfluff/sqlfluff/issues/5054
-        print("dbt config")
         # self.try_silence_dbt_logs()
 
         user_config = None
         cli_vars = self._get_cli_vars()
-
-        print("set user config and cli vars")
 
         flags.set_from_args(
             DbtConfigArgs(
@@ -285,7 +281,6 @@ class DbtTemplater(JinjaTemplater):
             ),
             user_config,
         )
-        print("flags set")
         _dbt_config = DbtRuntimeConfig.from_args(
             DbtConfigArgs(
                 project_dir=self.project_dir,
@@ -297,10 +292,8 @@ class DbtTemplater(JinjaTemplater):
                 threads=1,
             )
         )
-        print("dbt config set")
 
         register_adapter(_dbt_config, get_mp_context())
-        print("return dbt config")
         return _dbt_config
 
     @cached_property
@@ -327,8 +320,6 @@ class DbtTemplater(JinjaTemplater):
 
         # dbt 0.20.* and onward
         from dbt.parser.manifest import ManifestLoader
-
-        print(self.dbt_config)
 
         return ManifestLoader.get_full_manifest(self.dbt_config)
 
@@ -446,10 +437,6 @@ class DbtTemplater(JinjaTemplater):
             self.project_dir = self._get_project_dir()
         if not self.profiles_dir:
             self.profiles_dir = self._get_profiles_dir()
-
-        print("project_dir", self.project_dir)
-        print("")
-        print(self)
 
         outs = []
 
@@ -861,15 +848,12 @@ def process_from_rust(
     config_string: str,
     live_context: Dict[str, Any],
 ) -> TemplatedFile:
-    print("sys.path:", sys.path)
-    print("Current working directory:", os.getcwd())
     """Process the call from the rust side."""
     config = fluff_config_from_json(config_string)
     templater = DbtTemplater(override_context=live_context, sqlfluff_config=config)
     try:
         fnames = templater.sequence_files([fname], config=config)
         fname = fnames[0]
-        print(fname)
         (output, errors) = templater.process(
             in_str=string,
             fname=fname,
@@ -878,6 +862,7 @@ def process_from_rust(
         )
     except Exception as e:
         print("Error: ", e)
+        print("Error Stack:", e.__traceback__)
         raise e
     if errors != []:
         raise ValueError

@@ -85,11 +85,25 @@ impl From<FluffConfig> for PythonFluffConfig {
                 .unwrap_or_default(),
 
             dbt_profile: None,
-            dbt_profiles_dir: None,
+            dbt_profiles_dir: value
+                .get_section("templater")
+                .get("dbt")
+                .map(|value| value.as_map().unwrap())
+                .and_then(|value| {
+                    value
+                        .get("profiles_dir")
+                        .map(|v| v.as_string().unwrap().to_string())
+                }),
             dbt_target: None,
             dbt_target_path: None,
             dbt_context: None,
-            dbt_project_dir: None,
+            dbt_project_dir: value.get_section("templater").get("dbt").and_then(|value| {
+                value
+                    .as_map()
+                    .unwrap()
+                    .get("project_dir")
+                    .map(|v| v.as_string().unwrap().to_string())
+            }),
         }
     }
 }

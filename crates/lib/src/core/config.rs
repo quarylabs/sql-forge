@@ -425,7 +425,16 @@ impl ConfigLoader {
                         unimplemented!()
                     } else if name_lowercase.ends_with("_path") || name_lowercase.ends_with("_dir")
                     {
-                        unimplemented!()
+                        // if absolute_path, just keep
+                        // if relative path, make it absolute
+                        let path = PathBuf::from(value.as_string().unwrap());
+                        if !path.is_absolute() {
+                            unimplemented!(
+                                "Relative paths are not supported yet. {}, {}",
+                                name,
+                                path.to_str().unwrap_or_default()
+                            );
+                        }
                     }
 
                     let mut key = key.clone();
