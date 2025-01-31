@@ -1,0 +1,4 @@
+[sqruff]
+templater = dbt
+dialect = postgres
+rules = all
