@@ -58,6 +58,11 @@ pub fn raw_dialect() -> Dialect {
             r#"->>|#>>|->|#>|@>|<@|\?\||\?|\?&|#-"#,
             SyntaxKind::JsonOperator
         ),
+        Matcher::regex(
+            "trgm_operator",
+            r#"(<<<->|<->>>|<<->|<->>|<->|<<%|%>>|%>|<%|%)"#,
+            SyntaxKind::LikeOperator
+        ),
         Matcher::string(
             "at",
             "@",
