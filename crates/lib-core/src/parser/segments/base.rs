@@ -172,7 +172,6 @@ impl ErasedSegment {
 
     pub fn get_raw_segments(&self) -> Vec<ErasedSegment> {
         self.recursive_crawl_all(false)
-            .into_iter()
             .filter(|it| it.segments().is_empty())
             .collect()
     }
@@ -618,22 +617,26 @@ impl ErasedSegment {
         )
     }
 
-    pub fn recursive_crawl_all(&self, reverse: bool) -> Vec<ErasedSegment> {
-        let mut result = Vec::with_capacity(self.segments().len() + 1);
+    pub fn recursive_crawl_all(&self, reverse: bool) -> impl Iterator<Item = ErasedSegment> + '_ {
+        let self_clone = self.clone();
 
         if reverse {
-            for seg in self.segments().iter().rev() {
-                result.append(&mut seg.recursive_crawl_all(reverse));
-            }
-            result.push(self.clone());
+            Box::new(
+                self.segments()
+                    .iter()
+                    .rev()
+                    .flat_map(move |seg| seg.recursive_crawl_all(reverse))
+                    .chain(std::iter::once(self_clone)),
+            ) as Box<dyn Iterator<Item = _>>
         } else {
-            result.push(self.clone());
-            for seg in self.segments() {
-                result.append(&mut seg.recursive_crawl_all(reverse));
-            }
+            Box::new(
+                std::iter::once(self_clone).chain(
+                    self.segments()
+                        .iter()
+                        .flat_map(move |seg| seg.recursive_crawl_all(reverse)),
+                ),
+            ) as Box<dyn Iterator<Item = _>>
         }
-
-        result
     }
 
     pub fn raw_segments_with_ancestors(&self) -> &[(ErasedSegment, Vec<PathStep>)] {
