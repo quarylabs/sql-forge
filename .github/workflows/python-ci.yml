@@ -19,8 +19,98 @@ permissions:
   contents: read
 
 jobs:
+  linux-x86:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        target:
+          - x86_64-unknown-linux-gnu
+          - i686-unknown-linux-gnu
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          architecture: x64
+      - name: "Build wheels"
+        uses: PyO3/maturin-action@v1
+        with:
+          target: ${{ matrix.target }}
+          manylinux: auto
+          args: --release --out dist --manifest-path crates/cli/Cargo.toml --interpreter 3.12
+          sccache: "true"
+      - name: "Upload wheels"
+        uses: actions/upload-artifact@v4
+        with:
+          name: wheels-${{ matrix.target }}
+          path: dist
+
+  linux-arm:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        platform:
+          - target: aarch64-unknown-linux-gnu
+            arch: aarch64
+            # see https://github.com/astral-sh/ruff/issues/3791
+            # and https://github.com/gnzlbg/jemallocator/issues/170#issuecomment-1503228963
+            maturin_docker_options: -e JEMALLOC_SYS_WITH_LG_PAGE=16
+          - target: armv7-unknown-linux-gnueabihf
+            arch: armv7
+          - target: arm-unknown-linux-musleabihf
+            arch: arm
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: "Build wheels"
+        uses: PyO3/maturin-action@v1
+        with:
+          target: ${{ matrix.platform.target }}
+          # On `aarch64`, use `manylinux: 2_28`; otherwise, use `manylinux: auto`.
+          manylinux: ${{ matrix.platform.arch == 'aarch64' && '2_28' || 'auto' }}
+          docker-options: ${{ matrix.platform.maturin_docker_options }}
+          args: --release --out dist --manifest-path crates/cli/Cargo.toml --interpreter 3.12
+          sccache: "true"
+      - name: "Upload wheels"
+        uses: actions/upload-artifact@v4
+        with:
+          name: wheels-${{ matrix.platform.target }}
+          path: dist
+
+  musllinux:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        target:
+          - x86_64-unknown-linux-musl
+          - i686-unknown-linux-musl
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: "Build wheels"
+        uses: PyO3/maturin-action@v1
+        with:
+          target: ${{ matrix.target }}
+          manylinux: musllinux_1_1
+          args: --release --out dist --manifest-path crates/cli/Cargo.toml --interpreter 3.12
+          sccache: "true"
+      - name: "Upload wheels"
+        uses: actions/upload-artifact@v4
+        with:
+          name: wheels-musllinux-${{ matrix.target }}
+          path: dist
   windows:
-    runs-on: windows-latest
+    runs-on: windows-latest # Add the missing runner specification
     strategy:
       fail-fast: false
       matrix:
@@ -29,6 +119,8 @@ jobs:
             arch: x64
           - target: i686-pc-windows-msvc
             arch: x86
+          - target: aarch64-pc-windows-msvc
+            arch: x64
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -90,7 +182,7 @@ jobs:
     name: Release
     runs-on: ubuntu-latest
     if: ${{ startsWith(github.ref, 'refs/tags/') || github.event_name == 'workflow_dispatch' }}
-    needs: [windows, macos, sdist]
+    needs: [linux-x86, linux-arm, musllinux, windows, macos, sdist]
     continue-on-error: true
     permissions:
       # Use to sign the release artifacts
