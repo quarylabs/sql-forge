@@ -34,6 +34,7 @@ pub enum RuleGroups {
     Ambiguous,
     Capitalisation,
     Convention,
+    Jinja,
     Layout,
     References,
     Structure,

@@ -10,6 +10,7 @@ pub mod convention;
 pub mod layout;
 pub mod references;
 pub mod structure;
+pub mod jinja;
 
 pub fn rules() -> Vec<ErasedRule> {
     chain!(
@@ -19,7 +20,8 @@ pub fn rules() -> Vec<ErasedRule> {
         convention::rules(),
         layout::rules(),
         references::rules(),
-        structure::rules()
+        structure::rules(),
+        jinja::rules(),
     )
     .collect_vec()
 }
