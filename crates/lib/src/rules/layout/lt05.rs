@@ -163,7 +163,15 @@ FROM my_table"#
         }
 
         for idx in to_remove {
-            results.remove(idx);
+            if idx < results.len() {
+                results.remove(idx);
+            } else {
+                println!(
+                    "Attempted to remove index {} from results with length {}",
+                    idx,
+                    results.len()
+                );
+            }
         }
 
         results

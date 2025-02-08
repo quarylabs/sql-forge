@@ -713,3 +713,32 @@ test_pass_window_function:
             order by d desc
         ) as rnk
     from foo
+
+test_long_line_with_jinja_template:
+  # Test handling of long lines with Jinja templates to avoid index out of bounds
+  pass_str: |
+    {{ config(
+        materialized = 'table',
+        tags = ["tag1", "tag2", "tag3", "tag4", "tag5", "tag6", "tag7", "tag8", "tag9", "tag10"]
+    ) }}
+
+    WITH date_series AS (
+        SELECT DATE(DATEADD(month,
+            ROW_NUMBER() OVER (
+                PARTITION BY cm.customer_external_id,
+                cm.subscription_external_id,
+                cm.uuid
+                ORDER BY cm.date
+            ) - 1,
+            cm.date
+        ) AS calendar_date
+    FROM {{ source("some_schema", "some_table") }} AS cm
+    )
+    SELECT * FROM date_series
+  configs:
+    core:
+      max_line_length: 80
+    templater:
+      jinja:
+        context:
+          source: my_source
