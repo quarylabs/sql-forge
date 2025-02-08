@@ -50,6 +50,15 @@ Open the [playground](https://playground.quary.dev) to try out the linter and fo
 
 ### Installation
 
+#### Cargo 
+
+You can install the tool locally with `cargo`.
+
+```bash
+cargo install sqruff #compiles locally
+cargo binstall sqruff #downloads prebuilt binary
+```
+
 #### macOS
 
 You can use [brew](https://brew.sh/) to install sqruff easily on macOS.
