@@ -139,6 +139,11 @@ impl ErasedSegment {
         }
     }
 
+    /// Return true if this segment has no children
+    pub fn is_raw(&self) -> bool {
+        self.segments().is_empty()
+    }
+
     pub fn segments(&self) -> &[ErasedSegment] {
         match &self.value.kind {
             NodeOrTokenKind::Node(node) => &node.segments,
