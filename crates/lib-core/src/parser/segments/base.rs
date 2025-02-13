@@ -41,6 +41,10 @@ impl SegmentBuilder {
         SegmentBuilder::token(id, raw, SyntaxKind::Symbol).finish()
     }
 
+    pub fn raw(id: u32, raw: &str) -> ErasedSegment {
+        SegmentBuilder::token(id, raw, SyntaxKind::Raw).finish()
+    }
+
     pub fn node(
         id: u32,
         syntax_kind: SyntaxKind,
@@ -137,6 +141,11 @@ impl ErasedSegment {
             }),
             NodeOrTokenKind::Token(token) => &token.raw,
         }
+    }
+
+    /// Return true if this segment has no children
+    pub fn is_raw(&self) -> bool {
+        self.segments().is_empty()
     }
 
     pub fn segments(&self) -> &[ErasedSegment] {

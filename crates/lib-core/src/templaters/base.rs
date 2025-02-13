@@ -233,6 +233,10 @@ impl TemplatedFileInner {
         self.templated_str.is_some()
     }
 
+    pub fn raw_sliced_iter(&self) -> impl Iterator<Item = &RawFileSlice> {
+        self.raw_sliced.iter()
+    }
+
     /// Get the line number and position of a point in the source file.
     /// Args:
     ///  - char_pos: The character position in the relevant file.
@@ -540,8 +544,8 @@ pub enum RawFileSliceType {
 #[derive(Debug, PartialEq, Eq, Clone, Hash)]
 pub struct RawFileSlice {
     /// Source string
-    raw: String,
-    pub(crate) slice_type: String,
+    pub raw: String,
+    pub slice_type: String,
     /// Offset from beginning of source string
     pub source_idx: usize,
     slice_subtype: Option<RawFileSliceType>,

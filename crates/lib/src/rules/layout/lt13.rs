@@ -105,7 +105,7 @@ Start file on either code or comment. (The ^ represents the beginning of the fil
             }
 
             let raw_stack =
-                Segments::from_vec(raw_segments.clone(), context.templated_file.clone());
+                Segments::from_vec(raw_segments.clone(), Some(context.templated_file.clone()));
             // Non-whitespace segment.
             if !raw_stack.all(Some(|seg| seg.is_meta())) {
                 return vec![LintResult::new(

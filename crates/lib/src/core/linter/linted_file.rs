@@ -7,7 +7,7 @@ use sqruff_lib_core::errors::{SQLBaseError, SqlError};
 use sqruff_lib_core::parser::segments::fix::FixPatch;
 use sqruff_lib_core::templaters::base::{RawFileSlice, TemplatedFile};
 
-#[derive(Debug, Default)]
+#[derive(Debug, Default, Clone)]
 pub struct LintedFile {
     pub path: String,
     pub patches: Vec<FixPatch>,

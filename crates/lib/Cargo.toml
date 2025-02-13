@@ -38,6 +38,7 @@ name = "depth_map"
 harness = false
 
 [features]
+default = ["python"]
 python = ["pyo3", "sqruff-lib-core/serde"]
 
 [dependencies]
