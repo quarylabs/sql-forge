@@ -16,6 +16,11 @@ pkg-fmt = "tgz"
 pkg-url = "{ repo }/releases/download/v{ version }/sqruff-windows-x86_64.zip"
 pkg-fmt = "zip"
 
+[package.metadata.binstall]
+pkg-url = "{ repo }/releases/download/v{ version }/sqruff-{ target }{ archive-suffix }"
+pkg-fmt = "tgz"
+bin-dir = "sqruff{ binary-ext }"
+
 [lints]
 workspace = true
 
