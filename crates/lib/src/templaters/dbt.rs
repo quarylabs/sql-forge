@@ -85,3 +85,55 @@ impl Templater for DBTTemplater {
         Ok(templated_file)
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::path::PathBuf;
+    #[test]
+    fn test_dbt_simple() {
+        let templater = DBTTemplater;
+        let crate_location = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+        let file = crate_location.join("src").join("templaters").join("dbt.rs");
+        let project_dir = file
+            .parent()
+            .unwrap()
+            .join("sqruff_templaters")
+            .join("sample_dbt")
+            .canonicalize()
+            .unwrap();
+        let profiles_dir = project_dir.join(".profiles").canonicalize().unwrap();
+        let file_path = project_dir
+            .join("models/example/my_first_dbt_model.sql")
+            .canonicalize()
+            .unwrap();
+        let config = format!(
+            r#"
+[sqruff]
+templater = dbt
+[sqruff:templater:dbt]
+project_dir = {project_dir}
+profiles_dir = {profiles_dir}
+            "#,
+            project_dir = project_dir.to_str().unwrap(),
+            profiles_dir = profiles_dir.to_str().unwrap()
+        );
+        let fluff_config = FluffConfig::from_source(&config, None);
+        let templated_file = templater
+            .process(
+                r#"
+        {{ config(materialized='table') }}
+        with source_data as (
+            select 1 as id
+            union all
+            select null as id
+        )
+                "#,
+                file_path.to_str().unwrap(),
+                &fluff_config,
+                &None,
+            )
+            .unwrap();
+        assert!(!templated_file.sliced_file.is_empty());
+    }
+}
