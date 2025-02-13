@@ -41,6 +41,10 @@ impl SegmentBuilder {
         SegmentBuilder::token(id, raw, SyntaxKind::Symbol).finish()
     }
 
+    pub fn raw(id: u32, raw: &str) -> ErasedSegment {
+        SegmentBuilder::token(id, raw, SyntaxKind::Raw).finish()
+    }
+
     pub fn node(
         id: u32,
         syntax_kind: SyntaxKind,

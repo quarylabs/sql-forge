@@ -7,10 +7,10 @@ pub mod aliasing;
 pub mod ambiguous;
 pub mod capitalisation;
 pub mod convention;
+pub mod jinja;
 pub mod layout;
 pub mod references;
 pub mod structure;
-pub mod jinja;
 
 pub fn rules() -> Vec<ErasedRule> {
     chain!(

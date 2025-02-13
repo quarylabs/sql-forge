@@ -2,6 +2,9 @@ rule: JJ01
 
 test_simple:
   pass_str: SELECT 1 from {{ ref('foo') }}
+  config:
+    core:
+      templater: jinja
 
 test_simple_modified:
   # Test that the plus/minus notation works fine.

@@ -13,7 +13,7 @@ use crate::core::config::FluffConfig;
 pub struct RuleContext<'a> {
     pub tables: &'a Tables,
     pub dialect: &'a Dialect,
-    pub templated_file: Option<TemplatedFile>,
+    pub templated_file: &'a TemplatedFile,
     pub path: Option<String>,
     pub config: &'a FluffConfig,
 
@@ -41,13 +41,14 @@ impl<'a> RuleContext<'a> {
         dialect: &'a Dialect,
         config: &'a FluffConfig,
         segment: ErasedSegment,
+        templated_file: &'a TemplatedFile,
     ) -> Self {
         Self {
             tables,
             dialect,
             config,
             segment,
-            templated_file: <_>::default(),
+            templated_file,
             path: <_>::default(),
             parent_stack: <_>::default(),
             raw_stack: <_>::default(),

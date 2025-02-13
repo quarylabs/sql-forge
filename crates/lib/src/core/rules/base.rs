@@ -181,7 +181,8 @@ pub trait Rule: CloneRule + dyn_clone::DynClone + Debug + 'static + Send + Sync 
         tree: ErasedSegment,
         config: &FluffConfig,
     ) -> Vec<SQLLintError> {
-        let mut root_context = RuleContext::new(tables, dialect, config, tree.clone());
+        let mut root_context =
+            RuleContext::new(tables, dialect, config, tree.clone(), &templated_file);
         let mut vs = Vec::new();
 
         // TODO Will to return a note that rules were skipped

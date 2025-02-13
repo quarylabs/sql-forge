@@ -1,6 +1,6 @@
 use ahash::AHashMap;
 use sqruff_lib_core::lint_fix::LintFix;
-use sqruff_lib_core::parser::segments::base::ErasedSegment;
+use sqruff_lib_core::parser::segments::base::{ErasedSegment, SegmentBuilder};
 use sqruff_lib_core::parser::segments::fix::SourceFix;
 
 use crate::core::config::Value;
@@ -53,31 +53,28 @@ SELECT {{ a }} from {{
 "#
     }
 
-
     fn groups(&self) -> &'static [RuleGroups] {
         &[RuleGroups::All, RuleGroups::Jinja]
     }
 
     fn eval(&self, context: &RuleContext) -> Vec<LintResult> {
         debug_assert!(context.segment.get_position_marker().is_some());
-        
+
         // If the position marker for the root segment is literal then there's
         // no templated code, so return early
         if context.segment.get_position_marker().unwrap().is_literal() {
             return vec![];
         }
 
-        // Need templated file to proceed
-        let Some(templated_file) = &context.templated_file else {
-            return vec![];
-        };
-
         let mut results: Vec<LintResult> = vec![];
 
         // Work through the templated slices
-        for raw_slice in templated_file.raw_sliced_iter() {
+        for raw_slice in context.templated_file.raw_sliced_iter() {
             // Only want templated slices
-            if !matches!(raw_slice.slice_type.as_str(), "templated" | "block_start" | "block_end") {
+            if !matches!(
+                raw_slice.slice_type.as_str(),
+                "templated" | "block_start" | "block_end"
+            ) {
                 continue;
             }
 
@@ -88,8 +85,13 @@ SELECT {{ a }} from {{
 
             // Partition and position
             let src_idx = raw_slice.source_idx;
-            let (tag_pre, ws_pre, inner, ws_post, tag_post) = Self::get_white_space_ends(stripped.to_string());
-            let position = raw_slice.raw.find(stripped.chars().next().unwrap()).unwrap_or(0);
+            let (tag_pre, ws_pre, inner, ws_post, tag_post) =
+                Self::get_white_space_ends(stripped.to_string());
+
+            let position = raw_slice
+                .raw
+                .find(stripped.chars().next().unwrap())
+                .unwrap_or(0);
 
             // Whitespace should be single space OR contain newline
             let mut pre_fix = None;
@@ -117,7 +119,8 @@ SELECT {{ a }} from {{
             );
 
             // Find raw segment to attach fix to
-            let Some(raw_seg) = Self::find_raw_at_src_index(context.segment.clone(), src_idx) else {
+            let Some(raw_seg) = Self::find_raw_at_src_index(&context.segment, src_idx)
+            else {
                 continue;
             };
 
@@ -126,39 +129,35 @@ SELECT {{ a }} from {{
                 continue;
             }
 
-            let source_fixes = vec![LintFix::replace(
-                raw_seg.clone(),
-                vec![],
-                Some(vec![SourceFix::new(
-                    fixed.into(),
-                    src_idx + position..src_idx + position + stripped.len(),
-                    // This position in the templated file is rough, but close enough for sequencing.
-                    raw_seg.get_position_marker().unwrap().templated_slice.clone(),
-                ).erased()]),
+            let ps_marker = raw_seg
+                .get_position_marker()
+                .map(|pm| pm.templated_slice.clone());
+            let Some(ps_marker) = ps_marker else {
+                continue;
+            };
+
+            let source_fixes = vec![SourceFix::new(
+                fixed.clone().into(),
+                src_idx + position..src_idx + position + stripped.len(),
+                ps_marker,
             )];
 
             results.push(LintResult::new(
                 Some(raw_seg.clone()),
-                source_fixes,
-                Some(format!("Jinja tags should have a single whitespace on either side: {}", stripped)),
+                vec![LintFix::replace(
+                    raw_seg.clone(),
+                    vec![raw_seg.edit(raw_seg.id(), fixed.into(), Some(source_fixes))],
+                    None,
+                )],
+                Some(format!(
+                    "Jinja tags should have a single whitespace on either side: {}",
+                    stripped
+                )),
                 None,
             ));
         }
 
-        //     results.push(LintResult::new(
-        //         Some(raw_seg.clone()),
-        //         vec![LintFix::replace(
-        //             raw_seg,
-        //             [raw_seg.edit(source_fixes)],
-        //             None,
-        //         )],
-        //         Some(format!("Jinja tags should have a single whitespace on either side: {}", stripped)),
-        //         raw_seg.get_position_marker().unwrap().source_slice,
-        //     ));
-        // }
-        // results
-
-        unimplemented!();
+        results
     }
 
     fn is_fix_compatible(&self) -> bool {
@@ -167,27 +166,34 @@ SELECT {{ a }} from {{
 
     fn crawl_behaviour(&self) -> Crawler {
         RootOnlyCrawler.into()
-        }
+    }
 }
 
 impl RuleJJ01 {
     fn get_white_space_ends(s: String) -> (String, String, String, String, String) {
-        assert!(s.starts_with('{') && s.ends_with('}'), "String must start with {{ and end with }}");
+        assert!(
+            s.starts_with('{') && s.ends_with('}'),
+            "String must start with {{ and end with }}"
+        );
 
         // Get the main content between the tag markers
-        let mut main = s[2..s.len()-2].to_string();
+        let mut main = s[2..s.len() - 2].to_string();
         let mut pre = s[..2].to_string();
-        let mut post = s[s.len()-2..].to_string();
+        let mut post = s[s.len() - 2..].to_string();
 
         // Handle plus/minus modifiers
         let modifier_chars = ['+', '-'];
         if !main.is_empty() && modifier_chars.contains(&main.chars().next().unwrap()) {
+            let first_char = main.chars().next().unwrap();
             main = main[1..].to_string();
-            pre = s[..3].to_string();
+            // Keep the modifier directly after {% or {{
+            pre = format!("{}{}", pre, first_char);
         }
         if !main.is_empty() && modifier_chars.contains(&main.chars().last().unwrap()) {
-            main = main[..main.len()-1].to_string();
-            post = s[s.len()-3..].to_string();
+            let last_char = main.chars().last().unwrap();
+            main = main[..main.len() - 1].to_string();
+            // Keep the modifier directly before %} or }}
+            post = format!("{}{}", last_char, post);
         }
 
         // Split out inner content and surrounding whitespace
@@ -199,7 +205,7 @@ impl RuleJJ01 {
         (pre, pre_ws, inner, post_ws, post)
     }
 
-    fn find_raw_at_src_index(segment: ErasedSegment, src_idx: usize) -> Option<ErasedSegment> {
+    fn find_raw_at_src_index(segment: &ErasedSegment, src_idx: usize) -> Option<&ErasedSegment> {
         // Recursively search to find a raw segment for a position in the source.
         // NOTE: This assumes it's not being called on a `raw`.
         // In the case that there are multiple potential targets, we will find the first.
@@ -208,23 +214,81 @@ impl RuleJJ01 {
         assert!(segments.len() > 0, "Segment must have segments");
 
         for seg in segments {
-            if let Some(pos_marker) = seg.get_position_marker() {
-                let src_slice = pos_marker.source_slice.clone();
-                
-                // If it's before, skip onward
-                if src_slice.end <= src_idx {
-                    continue;
-                }
-
-                // Is the current segment raw?
-                if seg.is_raw() {
-                    return Some(seg.clone());
-                }
-
-                // Otherwise recurse
-                return Self::find_raw_at_src_index(seg.clone(), src_idx);
+            let Some(pos_marker) = seg.get_position_marker() else {
+                continue;
+            };
+            // If it's before, skip onward
+            if pos_marker.source_slice.end <= src_idx {
+                continue;
             }
+            // Is the current segment raw?
+            if seg.is_raw() {
+                return Some(seg);
+            }
+            // Otherwise recurse
+            return Self::find_raw_at_src_index(seg, src_idx);
         }
         None
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::{
+        core::{config::FluffConfig, linter::core::Linter},
+        templaters::jinja::JinjaTemplater,
+    };
+
+    #[test]
+    fn test_get_white_space_ends() {
+        let cases = vec![
+            (
+                "{{+ my_content }}",
+                (
+                    "{{+".to_string(),
+                    " ".to_string(),
+                    "my_content".to_string(),
+                    " ".to_string(),
+                    "}}".to_string(),
+                ),
+            ),
+            (
+                "{%+if true-%}",
+                (
+                    "{%+".to_string(),
+                    "".to_string(),
+                    "if true".to_string(),
+                    "".to_string(),
+                    "-%}".to_string(),
+                ),
+            ),
+        ];
+
+        for (input, expected) in cases {
+            let result = RuleJJ01::get_white_space_ends(input.to_string());
+            assert_eq!(result, expected);
+        }
+    }
+
+    #[test]
+    fn test_simple_example() {
+        let start = "SELECT 1 from {%+if true-%} {{ref('foo')}} {%-endif%}".to_string();
+        let want = "SELECT 1 from {%+ if true -%} {{ ref('foo') }} {%- endif %}".to_string();
+
+        let config = FluffConfig::from_source(
+            r#"
+[sqruff]
+rules = JJ01 
+templater = jinja
+            "#,
+            None,
+        );
+
+        let mut linter = Linter::new(config, None, Some(&JinjaTemplater), false);
+        let result = linter.lint_string_wrapped(&start, None, true);
+
+        let fixed = result.paths[0].files[0].clone().fix_string();
+        assert_eq!(fixed, want, "\nExpected: {}\nGot: {}", want, fixed);
     }
 }
