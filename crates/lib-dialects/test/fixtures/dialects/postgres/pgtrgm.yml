@@ -1,0 +1,121 @@
+file:
+- statement:
+  - select_statement:
+    - select_clause:
+      - keyword: SELECT
+      - select_clause_element:
+        - expression:
+          - column_reference:
+            - naked_identifier: text
+          - binary_operator: '%'
+          - column_reference:
+            - naked_identifier: text
+- statement_terminator: ;
+- statement:
+  - select_statement:
+    - select_clause:
+      - keyword: SELECT
+      - select_clause_element:
+        - expression:
+          - column_reference:
+            - naked_identifier: text
+          - comparison_operator: <%
+          - column_reference:
+            - naked_identifier: text
+- statement_terminator: ;
+- statement:
+  - select_statement:
+    - select_clause:
+      - keyword: SELECT
+      - select_clause_element:
+        - expression:
+          - column_reference:
+            - naked_identifier: text
+          - comparison_operator: '%>'
+          - column_reference:
+            - naked_identifier: text
+- statement_terminator: ;
+- statement:
+  - select_statement:
+    - select_clause:
+      - keyword: SELECT
+      - select_clause_element:
+        - expression:
+          - column_reference:
+            - naked_identifier: text
+          - comparison_operator: <<%
+          - column_reference:
+            - naked_identifier: text
+- statement_terminator: ;
+- statement:
+  - select_statement:
+    - select_clause:
+      - keyword: SELECT
+      - select_clause_element:
+        - expression:
+          - column_reference:
+            - naked_identifier: text
+          - comparison_operator: '%>>'
+          - column_reference:
+            - naked_identifier: text
+- statement_terminator: ;
+- statement:
+  - select_statement:
+    - select_clause:
+      - keyword: SELECT
+      - select_clause_element:
+        - expression:
+          - column_reference:
+            - naked_identifier: text
+          - comparison_operator: <->
+          - column_reference:
+            - naked_identifier: text
+- statement_terminator: ;
+- statement:
+  - select_statement:
+    - select_clause:
+      - keyword: SELECT
+      - select_clause_element:
+        - expression:
+          - column_reference:
+            - naked_identifier: text
+          - comparison_operator: <<->
+          - column_reference:
+            - naked_identifier: text
+- statement_terminator: ;
+- statement:
+  - select_statement:
+    - select_clause:
+      - keyword: SELECT
+      - select_clause_element:
+        - expression:
+          - column_reference:
+            - naked_identifier: text
+          - comparison_operator: <->>
+          - column_reference:
+            - naked_identifier: text
+- statement_terminator: ;
+- statement:
+  - select_statement:
+    - select_clause:
+      - keyword: SELECT
+      - select_clause_element:
+        - expression:
+          - column_reference:
+            - naked_identifier: text
+          - comparison_operator: <<<->
+          - column_reference:
+            - naked_identifier: text
+- statement_terminator: ;
+- statement:
+  - select_statement:
+    - select_clause:
+      - keyword: SELECT
+      - select_clause_element:
+        - expression:
+          - column_reference:
+            - naked_identifier: text
+          - comparison_operator: <->>>
+          - column_reference:
+            - naked_identifier: text
+- statement_terminator: ;
